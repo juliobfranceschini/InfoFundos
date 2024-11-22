@@ -78,7 +78,7 @@ def filtrar_por_cnpj(dados, cnpj):
 
 # Função principal do Streamlit
 def main():
-    st.title("Info")
+    st.title("Dashboard de Informações de Fundos de Investimento")
     st.write("O download dos dados será feito apenas uma vez. Depois, você poderá consultar rapidamente os CNPJs.")
 
     # Botão para carregar os dados
@@ -100,8 +100,24 @@ def main():
             st.write(f"Buscando informações para o CNPJ: {cnpj_input}")
             dados_cnpj = filtrar_por_cnpj(st.session_state["dados_fundos_total"], cnpj_input)
             if dados_cnpj is not None:
-                st.write("Informações encontradas:")
-                st.dataframe(dados_cnpj)
+                st.write("### Informações encontradas:")
+                
+                # Exibindo os dados de forma mais visual
+                for index, row in dados_cnpj.iterrows():
+                    st.write(f"#### Nome Fantasia: {row['Nome fantasia']}")
+                    st.write(f"**CNPJ Fundo:** {row['CNPJ Fundo']}")
+                    st.write(f"**Nome Social:** {row['Nome Social']}")
+                    st.write(f"**Público-Alvo:** {row['Público-Alvo']}")
+                    st.write(f"**Data Competência:** {row['Data competência']}")
+                    st.write(f"**Índice Referência:** {row['Índice Referência']}")
+                    st.write(f"**Limite Alavancagem:** {row['Limite alavancagem']}")
+                    st.write(f"**Possibilidade de Perdas Patrimoniais:** {row['Possibilidade perdas patrimoniais']}")
+                    st.write(f"**Investimento Inicial Mínimo:** R$ {row['Investimento inicial mínimo']}")
+                    st.write(f"**PL:** R$ {row['PL']}")
+                    st.write(f"**Taxa ADM:** {row['Taxa ADM']}%")
+                    st.write(f"**Taxa Performance:** {row['Taxa Performance']}%")
+                    st.write(f"**Rentabilidade acumulada em 5 anos:** {row['Rentabilidade acumulada 5 anos ']}%")
+                    st.write("---")
             else:
                 st.write(f"Nenhum dado encontrado para o CNPJ: {cnpj_input}")
     else:
