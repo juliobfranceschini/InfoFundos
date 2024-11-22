@@ -8,35 +8,38 @@ import pandas as pd
 pd.set_option('display.max_columns', None)  # Mostrar todas as colunas
 
 # Função para baixar e processar os dados de um determinado ano e mês
-def processar_dados(ano, mes):
-    url = f'https://dados.cvm.gov.br/dados/FI/DOC/LAMINA/DADOS/lamina_fi_{ano}{mes:02}.zip'
-    response = requests.get(url)
+@st.cache_data
+def carregar_dados():
+    st.write("Baixando e processando os dados. Isso pode levar alguns minutos...")
+    todos_dados = []
+    anos = ['2024']
+    meses = range(1, 13)
 
-    if response.status_code == 200:
-        try:
-            with zipfile.ZipFile(io.BytesIO(response.content), 'r') as arquivo_zip:
-                dataframes = []
-                for file_name in arquivo_zip.namelist():
-                    try:
-                        df = pd.read_csv(
-                            arquivo_zip.open(file_name),
-                            sep=';',
-                            encoding='ISO-8859-1',
-                            on_bad_lines='skip'
-                        )
-                        dataframes.append(df)
-                    except Exception as e:
-                        st.write(f"Erro ao processar {file_name}: {e}")
-                if dataframes:
-                    return pd.concat(dataframes, ignore_index=True)
-                else:
-                    st.write("Nenhum dado válido encontrado no arquivo ZIP.")
-                    return None
-        except zipfile.BadZipFile:
-            st.write("Erro: Arquivo ZIP inválido.")
-            return None
+    for ano in anos:
+        for mes in meses:
+            url = f'https://dados.cvm.gov.br/dados/FI/DOC/LAMINA/DADOS/lamina_fi_{ano}{mes:02}.zip'
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                try:
+                    with zipfile.ZipFile(io.BytesIO(response.content), 'r') as arquivo_zip:
+                        for file_name in arquivo_zip.namelist():
+                            try:
+                                df = pd.read_csv(
+                                    arquivo_zip.open(file_name),
+                                    sep=';',
+                                    encoding='ISO-8859-1',
+                                    on_bad_lines='skip'
+                                )
+                                todos_dados.append(df)
+                            except Exception as e:
+                                st.write(f"Erro ao processar {file_name}: {e}")
+                except zipfile.BadZipFile:
+                    st.write(f"Erro: Arquivo ZIP inválido para {ano}-{mes:02}.")
+    
+    if todos_dados:
+        return pd.concat(todos_dados, ignore_index=True)
     else:
-        st.write(f"Erro ao baixar dados de {ano}-{mes:02}. URL: {url}")
         return None
 
 # Função para filtrar os dados de um CNPJ específico
@@ -76,37 +79,24 @@ def filtrar_por_cnpj(dados, cnpj):
 # Função principal do Streamlit
 def main():
     st.title("Dashboard de Informações de Fundos de Investimento")
-    st.write("Carregue os dados uma vez e consulte pelo CNPJ do fundo.")
-
-    # Controle para armazenar os dados carregados
-    if "dados_fundos_total" not in st.session_state:
-        st.session_state["dados_fundos_total"] = None
+    st.write("O download dos dados será feito apenas uma vez. Depois, você poderá consultar rapidamente os CNPJs.")
 
     # Botão para carregar os dados
     if st.button("Carregar Dados"):
-        st.write("Baixando e processando os dados. Aguarde...")
-        todos_dados = []
-        anos = ['2024']
-        meses = range(1, 13)
-
-        for ano in anos:
-            for mes in meses:
-                df = processar_dados(ano, mes)
-                if df is not None:
-                    todos_dados.append(df)
-
-        if todos_dados:
-            st.session_state["dados_fundos_total"] = pd.concat(todos_dados, ignore_index=True)
+        dados_fundos_total = carregar_dados()
+        if dados_fundos_total is not None:
+            st.session_state["dados_fundos_total"] = dados_fundos_total
             st.write("Dados carregados com sucesso!")
         else:
-            st.write("Nenhum dado foi processado.")
+            st.write("Falha ao carregar os dados.")
 
-    # Entrada de CNPJ
-    cnpj_input = st.text_input("Digite o CNPJ do Fundo", "")
+    # Verificar se os dados estão carregados
+    if "dados_fundos_total" in st.session_state:
+        # Entrada de CNPJ
+        cnpj_input = st.text_input("Digite o CNPJ do Fundo", "")
 
-    # Botão para buscar o CNPJ
-    if st.button("Buscar CNPJ"):
-        if st.session_state["dados_fundos_total"] is not None:
+        # Botão para buscar o CNPJ
+        if st.button("Buscar CNPJ"):
             st.write(f"Buscando informações para o CNPJ: {cnpj_input}")
             dados_cnpj = filtrar_por_cnpj(st.session_state["dados_fundos_total"], cnpj_input)
             if dados_cnpj is not None:
@@ -114,8 +104,8 @@ def main():
                 st.dataframe(dados_cnpj)
             else:
                 st.write(f"Nenhum dado encontrado para o CNPJ: {cnpj_input}")
-        else:
-            st.write("Por favor, carregue os dados primeiro.")
+    else:
+        st.write("Por favor, carregue os dados antes de consultar um CNPJ.")
 
 # Executar o Streamlit
 if __name__ == "__main__":
