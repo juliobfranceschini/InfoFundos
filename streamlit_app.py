@@ -76,40 +76,46 @@ def filtrar_por_cnpj(dados, cnpj):
 # Função principal do Streamlit
 def main():
     st.title("Dashboard de Informações de Fundos de Investimento")
-    st.write("Digite o CNPJ do fundo para visualizar as informações.")
+    st.write("Carregue os dados uma vez e consulte pelo CNPJ do fundo.")
 
-    # Entrada de CNPJ
-    cnpj_input = st.text_input("CNPJ do Fundo", "")
-
-    # Ano e meses para os dados
-    anos = ['2024']
-    meses = range(1, 13)
+    # Controle para armazenar os dados carregados
+    if "dados_fundos_total" not in st.session_state:
+        st.session_state["dados_fundos_total"] = None
 
     # Botão para carregar os dados
     if st.button("Carregar Dados"):
         st.write("Baixando e processando os dados. Aguarde...")
         todos_dados = []
+        anos = ['2024']
+        meses = range(1, 13)
+
         for ano in anos:
             for mes in meses:
                 df = processar_dados(ano, mes)
                 if df is not None:
                     todos_dados.append(df)
-        
+
         if todos_dados:
-            dados_fundos_total = pd.concat(todos_dados, ignore_index=True)
+            st.session_state["dados_fundos_total"] = pd.concat(todos_dados, ignore_index=True)
             st.write("Dados carregados com sucesso!")
-            
-            # Filtrar os dados pelo CNPJ fornecido
-            if cnpj_input:
-                st.write(f"Buscando informações para o CNPJ: {cnpj_input}")
-                dados_cnpj = filtrar_por_cnpj(dados_fundos_total, cnpj_input)
-                if dados_cnpj is not None:
-                    st.write("Informações encontradas:")
-                    st.dataframe(dados_cnpj)
-                else:
-                    st.write(f"Nenhum dado encontrado para o CNPJ: {cnpj_input}")
         else:
             st.write("Nenhum dado foi processado.")
+
+    # Entrada de CNPJ
+    cnpj_input = st.text_input("Digite o CNPJ do Fundo", "")
+
+    # Botão para buscar o CNPJ
+    if st.button("Buscar CNPJ"):
+        if st.session_state["dados_fundos_total"] is not None:
+            st.write(f"Buscando informações para o CNPJ: {cnpj_input}")
+            dados_cnpj = filtrar_por_cnpj(st.session_state["dados_fundos_total"], cnpj_input)
+            if dados_cnpj is not None:
+                st.write("Informações encontradas:")
+                st.dataframe(dados_cnpj)
+            else:
+                st.write(f"Nenhum dado encontrado para o CNPJ: {cnpj_input}")
+        else:
+            st.write("Por favor, carregue os dados primeiro.")
 
 # Executar o Streamlit
 if __name__ == "__main__":
