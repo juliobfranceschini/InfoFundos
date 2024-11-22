@@ -75,8 +75,9 @@ def filtrar_por_cnpj(dados, cnpj):
             'PR_RENTAB_FUNDO_5ANO': 'Rentabilidade acumulada 5 anos ',
         }
         
-        # Retornar apenas as informações relevantes e renomeadas
-        return dados_mais_recente[colunas_relevantes.keys()].rename(index=colunas_relevantes)
+        # Renomear colunas e substituir valores ausentes
+        dados_filtrados = dados_mais_recente[colunas_relevantes.keys()].rename(index=colunas_relevantes)
+        return dados_filtrados.fillna("-")  # Substituir NaN por traço
 
 # Função principal do Streamlit
 def main():
@@ -109,7 +110,7 @@ def main():
                 st.write(f"**CNPJ Fundo:** {dados_cnpj['CNPJ Fundo']}")
                 st.write(f"**Nome Social:** {dados_cnpj['Nome Social']}")
                 st.write(f"**Público-Alvo:** {dados_cnpj['Público-Alvo']}")
-                st.write(f"**Data Competência:** {dados_cnpj['Data competência'].strftime('%d/%m/%Y')}")
+                st.write(f"**Data Competência:** {dados_cnpj['Data competência'].strftime('%d/%m/%Y') if dados_cnpj['Data competência'] != '-' else '-'}")
                 st.write(f"**Índice Referência:** {dados_cnpj['Índice Referência']}")
                 st.write(f"**Limite Alavancagem:** {dados_cnpj['Limite alavancagem']}")
                 st.write(f"**Possibilidade de Perdas Patrimoniais:** {dados_cnpj['Possibilidade perdas patrimoniais']}")
