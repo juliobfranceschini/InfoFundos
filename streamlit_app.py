@@ -78,7 +78,7 @@ def filtrar_por_cnpj(dados, cnpj):
 
 # Função principal do Streamlit
 def main():
-    st.title("Dashboard de Informações de Fundos de Investimento")
+    st.title("Info")
     st.write("O download dos dados será feito apenas uma vez. Depois, você poderá consultar rapidamente os CNPJs.")
 
     # Botão para carregar os dados
