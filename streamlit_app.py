@@ -44,20 +44,20 @@ def carregar_dados():
 
 # Função para filtrar os dados de um CNPJ específico
 def filtrar_por_cnpj(dados, cnpj):
+    # Filtrar pelos dados do CNPJ fornecido
     dados_cnpj = dados[dados['CNPJ_FUNDO_CLASSE'] == cnpj]
 
     if dados_cnpj.empty:
         return None
     else:
-        dados_cnpj_unicos = dados_cnpj.drop_duplicates(subset=['CNPJ_FUNDO_CLASSE', 'DT_COMPTC', 'DENOM_SOCIAL'])
-        colunas_relevantes = [
-            'CNPJ_FUNDO_CLASSE', 'DENOM_SOCIAL', 'DT_COMPTC', 'NM_FANTASIA',
-            'PUBLICO_ALVO', 'INDICE_REFER', 'PR_PL_ALAVANC', 'RISCO_PERDA',
-            'INVEST_INICIAL_MIN', 'VL_PATRIM_LIQ', 'TAXA_ADM', 'TAXA_ADM_MIN',
-            'TAXA_ADM_MAX', 'TAXA_PERFM', 'PR_RENTAB_FUNDO_5ANO',
-        ]
-        dados_filtrados = dados_cnpj_unicos[colunas_relevantes]
-        novos_nomes = {
+        # Converter a coluna de data para o formato datetime para comparação
+        dados_cnpj['DT_COMPTC'] = pd.to_datetime(dados_cnpj['DT_COMPTC'], format='%Y-%m-%d', errors='coerce')
+
+        # Filtrar o registro mais recente
+        dados_mais_recente = dados_cnpj.sort_values(by='DT_COMPTC', ascending=False).iloc[0]
+
+        # Selecionar as colunas relevantes
+        colunas_relevantes = {
             'CNPJ_FUNDO_CLASSE': 'CNPJ Fundo',
             'DENOM_SOCIAL': 'Nome Social',
             'DT_COMPTC': 'Data competência',
@@ -74,7 +74,9 @@ def filtrar_por_cnpj(dados, cnpj):
             'TAXA_PERFM': 'Taxa Performance',
             'PR_RENTAB_FUNDO_5ANO': 'Rentabilidade acumulada 5 anos ',
         }
-        return dados_filtrados.rename(columns=novos_nomes)
+        
+        # Retornar apenas as informações relevantes e renomeadas
+        return dados_mais_recente[colunas_relevantes.keys()].rename(index=colunas_relevantes)
 
 # Função principal do Streamlit
 def main():
@@ -103,21 +105,19 @@ def main():
                 st.write("### Informações encontradas:")
                 
                 # Exibindo os dados de forma mais visual
-                for index, row in dados_cnpj.iterrows():
-                    st.write(f"#### Nome Fantasia: {row['Nome fantasia']}")
-                    st.write(f"**CNPJ Fundo:** {row['CNPJ Fundo']}")
-                    st.write(f"**Nome Social:** {row['Nome Social']}")
-                    st.write(f"**Público-Alvo:** {row['Público-Alvo']}")
-                    st.write(f"**Data Competência:** {row['Data competência']}")
-                    st.write(f"**Índice Referência:** {row['Índice Referência']}")
-                    st.write(f"**Limite Alavancagem:** {row['Limite alavancagem']}")
-                    st.write(f"**Possibilidade de Perdas Patrimoniais:** {row['Possibilidade perdas patrimoniais']}")
-                    st.write(f"**Investimento Inicial Mínimo:** R$ {row['Investimento inicial mínimo']}")
-                    st.write(f"**PL:** R$ {row['PL']}")
-                    st.write(f"**Taxa ADM:** {row['Taxa ADM']}%")
-                    st.write(f"**Taxa Performance:** {row['Taxa Performance']}%")
-                    st.write(f"**Rentabilidade acumulada em 5 anos:** {row['Rentabilidade acumulada 5 anos ']}%")
-                    st.write("---")
+                st.write(f"#### Nome Fantasia: {dados_cnpj['Nome fantasia']}")
+                st.write(f"**CNPJ Fundo:** {dados_cnpj['CNPJ Fundo']}")
+                st.write(f"**Nome Social:** {dados_cnpj['Nome Social']}")
+                st.write(f"**Público-Alvo:** {dados_cnpj['Público-Alvo']}")
+                st.write(f"**Data Competência:** {dados_cnpj['Data competência'].strftime('%d/%m/%Y')}")
+                st.write(f"**Índice Referência:** {dados_cnpj['Índice Referência']}")
+                st.write(f"**Limite Alavancagem:** {dados_cnpj['Limite alavancagem']}")
+                st.write(f"**Possibilidade de Perdas Patrimoniais:** {dados_cnpj['Possibilidade perdas patrimoniais']}")
+                st.write(f"**Investimento Inicial Mínimo:** R$ {dados_cnpj['Investimento inicial mínimo']}")
+                st.write(f"**PL:** R$ {dados_cnpj['PL']}")
+                st.write(f"**Taxa ADM:** {dados_cnpj['Taxa ADM']}%")
+                st.write(f"**Taxa Performance:** {dados_cnpj['Taxa Performance']}%")
+                st.write(f"**Rentabilidade acumulada em 5 anos:** {dados_cnpj['Rentabilidade acumulada 5 anos ']}%")
             else:
                 st.write(f"Nenhum dado encontrado para o CNPJ: {cnpj_input}")
     else:
